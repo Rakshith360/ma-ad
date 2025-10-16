@@ -1,0 +1,701 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>ManaTractor - Admin Panel</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/3.7.0/chart.min.js"></script>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --background-dark: #111827;
+            --background-light: #f9fafb;
+            --card-dark: #1f2937;
+            --card-light: #ffffff;
+            --text-dark: #d1d5db;
+            --text-light: #1f2937;
+            --border-dark: #374151;
+            --border-light: #e5e7eb;
+            --primary: #2563eb;
+            --primary-hover: #1d4ed8;
+        }
+
+        html.dark {
+            color-scheme: dark;
+        }
+
+        body {
+            font-family: 'Inter', sans-serif;
+            transition: background-color 0.3s ease, color 0.3s ease;
+        }
+
+        .dark body {
+            background-color: var(--background-dark);
+            color: var(--text-dark);
+        }
+
+        body {
+            background-color: var(--background-light);
+            color: var(--text-light);
+        }
+
+        .card {
+            background-color: var(--card-light);
+            transition: background-color 0.3s ease;
+        }
+
+        .dark .card {
+            background-color: var(--card-dark);
+        }
+
+        .table-header {
+            background-color: #374151;
+            color: #f9fafb;
+        }
+        
+        .table-row-odd {
+             background-color: var(--card-light);
+        }
+        .dark .table-row-odd {
+             background-color: #374151;
+        }
+
+        .table-row-even {
+            background-color: #f9fafb;
+        }
+        .dark .table-row-even {
+            background-color: var(--card-dark);
+        }
+
+        .loader {
+            border-top-color: var(--primary);
+            animation: spin 1s linear infinite;
+        }
+
+        @keyframes spin {
+            to {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .modal-overlay {
+            background-color: rgba(0, 0, 0, 0.7);
+        }
+
+        /* Scrollbar styles for a futuristic look */
+        ::-webkit-scrollbar {
+            width: 8px;
+            height: 8px;
+        }
+        ::-webkit-scrollbar-track {
+            background: var(--background-dark);
+        }
+        ::-webkit-scrollbar-thumb {
+            background: var(--primary);
+            border-radius: 4px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: var(--primary-hover);
+        }
+    </style>
+</head>
+<body class="antialiased">
+
+    <!-- Loading Overlay -->
+    <div id="loadingOverlay" class="fixed inset-0 z-50 flex items-center justify-center bg-gray-900 bg-opacity-80 transition-opacity duration-300">
+        <div class="loader ease-linear rounded-full border-8 border-t-8 border-gray-600 h-24 w-24"></div>
+    </div>
+
+    <!-- Login Section -->
+    <div id="loginSection" class="min-h-screen flex items-center justify-center bg-gray-900 p-4">
+        <div class="w-full max-w-md p-8 space-y-8 bg-gray-800 rounded-2xl shadow-2xl border border-gray-700">
+            <div class="text-center">
+                <img src="https://res.cloudinary.com/drt6xl4x3/image/upload/v1760299740/manatractor_logo_n0noj8.jpg" alt="ManaTractor Logo" class="w-20 h-20 mx-auto mb-4 rounded-full border-2 border-blue-500 p-1">
+                <h1 class="text-3xl font-bold text-white">ManaTractor Admin</h1>
+                <p class="text-gray-400 mt-2">Secure Panel Login</p>
+            </div>
+            <form id="loginForm" class="space-y-6">
+                <div>
+                    <input id="email" type="email" autocomplete="email" required class="w-full px-4 py-3 text-white bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Admin Email">
+                </div>
+                <div>
+                    <input id="password" type="password" autocomplete="current-password" required class="w-full px-4 py-3 text-white bg-gray-700 border border-gray-600 rounded-lg focus:ring-blue-500 focus:border-blue-500" placeholder="Password">
+                </div>
+                <button type="submit" class="w-full py-3 px-4 font-semibold text-white bg-blue-600 rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-800 transition-all duration-300 transform hover:scale-105">
+                    Sign In
+                </button>
+                <p id="loginError" class="text-red-400 text-center text-sm pt-2"></p>
+            </form>
+        </div>
+    </div>
+
+    <!-- Admin Panel -->
+    <div id="adminPanel" class="hidden">
+        <div class="min-h-screen flex">
+            <!-- Main content -->
+            <main class="flex-1 p-4 sm:p-6 lg:p-8">
+                <!-- Header -->
+                <header class="flex items-center justify-between pb-6 border-b border-gray-700">
+                    <div>
+                        <h1 class="text-3xl font-bold text-white">Admin Dashboard</h1>
+                        <p class="text-gray-400">Welcome to ManaTractor's central control panel.</p>
+                    </div>
+                    <div class="flex items-center space-x-4">
+                        <button id="theme-toggle" class="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500 focus:ring-offset-gray-900">
+                            <svg id="theme-icon-light" class="h-6 w-6 hidden" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 3v1m0 16v1m9-9h-1M4 12H3m15.364 6.364l-.707-.707M6.343 6.343l-.707-.707m12.728 0l-.707.707M6.343 17.657l-.707.707M16 12a4 4 0 11-8 0 4 4 0 018 0z"></path></svg>
+                            <svg id="theme-icon-dark" class="h-6 w-6" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M20.354 15.354A9 9 0 018.646 3.646 9.003 9.003 0 0012 21a9.003 9.003 0 008.354-5.646z"></path></svg>
+                        </button>
+                        <div class="flex items-center space-x-3">
+                            <img id="adminPhoto" class="h-10 w-10 rounded-full object-cover" src="https://placehold.co/40x40/1f2937/d1d5db?text=A" alt="Admin">
+                            <div>
+                                <p id="adminName" class="text-white font-semibold">Admin</p>
+                                <p id="adminEmail" class="text-xs text-gray-400">admin@manatractor.com</p>
+                            </div>
+                        </div>
+                        <button id="logoutButton" class="px-4 py-2 text-sm font-medium text-white bg-red-600 rounded-lg hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-red-500 focus:ring-offset-gray-900">
+                            Logout
+                        </button>
+                    </div>
+                </header>
+
+                <!-- Dashboard Stats -->
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6 mt-6">
+                    <div class="card p-6 rounded-xl border border-gray-700 shadow-lg">
+                        <h3 class="text-sm font-medium text-gray-400">Total Registered Users</h3>
+                        <p id="totalUsers" class="text-3xl font-bold text-white mt-2">0</p>
+                    </div>
+                    <div class="card p-6 rounded-xl border border-gray-700 shadow-lg">
+                        <h3 class="text-sm font-medium text-gray-400">Total Saved Logs</h3>
+                        <p id="totalLogs" class="text-3xl font-bold text-white mt-2">0</p>
+                    </div>
+                    <div class="card p-6 rounded-xl border border-gray-700 shadow-lg">
+                        <h3 class="text-sm font-medium text-gray-400">Total Earnings</h3>
+                        <p id="totalEarnings" class="text-3xl font-bold text-green-400 mt-2">₹0</p>
+                    </div>
+                    <div class="card p-6 rounded-xl border border-gray-700 shadow-lg">
+                        <h3 class="text-sm font-medium text-gray-400">Top 5 Users by Earnings</h3>
+                        <ul id="topUsers" class="mt-2 space-y-1 text-sm">
+                            <!-- Populated by JS -->
+                        </ul>
+                    </div>
+                </div>
+
+                <!-- Charts -->
+                <div class="grid grid-cols-1 lg:grid-cols-2 gap-6 mt-6">
+                    <div class="card p-6 rounded-xl border border-gray-700 shadow-lg">
+                        <h3 class="text-lg font-semibold text-white">Daily Earnings (Last 7 Days)</h3>
+                        <canvas id="dailyEarningsChart"></canvas>
+                    </div>
+                    <div class="card p-6 rounded-xl border border-gray-700 shadow-lg">
+                        <h3 class="text-lg font-semibold text-white">Earnings per User</h3>
+                        <canvas id="userComparisonChart"></canvas>
+                    </div>
+                </div>
+                
+                <!-- Logs Table -->
+                <div class="mt-8 card p-6 rounded-xl border border-gray-700 shadow-lg">
+                    <div class="flex flex-col sm:flex-row items-center justify-between mb-4">
+                        <h2 class="text-xl font-semibold text-white mb-4 sm:mb-0">All User Logs</h2>
+                        <div class="flex flex-wrap items-center gap-4 w-full sm:w-auto">
+                            <input id="searchInput" type="text" placeholder="Search by name or email..." class="w-full sm:w-auto px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500">
+                            <select id="statusFilter" class="w-full sm:w-auto px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500">
+                                <option value="">All Statuses</option>
+                                <option value="paid">Paid</option>
+                                <option value="due">Due</option>
+                                <option value="advance">Advance</option>
+                                <option value="default">Default</option>
+                            </select>
+                            <input id="dateFilter" type="date" class="w-full sm:w-auto px-4 py-2 bg-gray-700 border border-gray-600 rounded-lg text-white focus:ring-blue-500 focus:border-blue-500" style="color-scheme: dark;">
+                             <button id="exportButton" class="w-full sm:w-auto px-4 py-2 font-semibold text-white bg-green-600 rounded-lg hover:bg-green-700 transition">
+                                Export CSV
+                            </button>
+                        </div>
+                    </div>
+                    <div class="overflow-x-auto">
+                        <table class="min-w-full divide-y divide-gray-700">
+                            <thead class="table-header">
+                                <tr>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Farmer</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Date</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Time</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Details</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Amount</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Status</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">User</th>
+                                    <th class="px-6 py-3 text-left text-xs font-medium uppercase tracking-wider">Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="logsTableBody" class="divide-y divide-gray-700">
+                                <!-- Populated by JS -->
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+            </main>
+        </div>
+    </div>
+    
+    <!-- Log Details Modal -->
+    <div id="logModal" class="fixed inset-0 z-40 hidden items-center justify-center p-4 modal-overlay">
+         <div id="logModalContent" class="card w-full max-w-2xl p-6 rounded-2xl border border-gray-700 shadow-2xl transform transition-all scale-95 opacity-0">
+             <div class="flex justify-between items-center mb-4">
+                 <h2 class="text-2xl font-bold text-white">Log Details</h2>
+                 <button id="closeModal" class="p-2 rounded-full text-gray-400 hover:bg-gray-700 hover:text-white">
+                     <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M6 18L18 6M6 6l12 12"></path></svg>
+                 </button>
+             </div>
+             <div id="modalBody" class="text-gray-300 space-y-3 max-h-[70vh] overflow-y-auto pr-2">
+                 <!-- Populated by JS -->
+             </div>
+         </div>
+    </div>
+
+
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-app.js";
+        import { getAuth, signInWithEmailAndPassword, onAuthStateChanged, signOut } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-auth.js";
+        import { getFirestore, collection, onSnapshot, query, doc, getDoc, deleteDoc, collectionGroup } from "https://www.gstatic.com/firebasejs/10.12.2/firebase-firestore.js";
+
+        // IMPORTANT: Replace with your actual Firebase config
+        const firebaseConfig = {
+          apiKey: "AIzaSyA-7w4YspeNiyHgnMx8R5NZSCPaGYmMNak",
+  authDomain: "test-test-39764.firebaseapp.com",
+  projectId: "test-test-39764",
+  storageBucket: "test-test-39764.firebasestorage.app",
+  messagingSenderId: "844520701327",
+  appId: "1:844520701327:web:07f0c4384115592fcf1ffa"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const auth = getAuth(app);
+        const db = getFirestore(app);
+
+        // --- DOM Elements ---
+        const loadingOverlay = document.getElementById('loadingOverlay');
+        const loginSection = document.getElementById('loginSection');
+        const adminPanel = document.getElementById('adminPanel');
+        const loginForm = document.getElementById('loginForm');
+        const loginError = document.getElementById('loginError');
+        const logoutButton = document.getElementById('logoutButton');
+
+        // Dashboard elements
+        const totalUsersEl = document.getElementById('totalUsers');
+        const totalLogsEl = document.getElementById('totalLogs');
+        const totalEarningsEl = document.getElementById('totalEarnings');
+        const topUsersEl = document.getElementById('topUsers');
+        const adminNameEl = document.getElementById('adminName');
+        const adminEmailEl = document.getElementById('adminEmail');
+        const adminPhotoEl = document.getElementById('adminPhoto');
+
+        // Logs table elements
+        const logsTableBody = document.getElementById('logsTableBody');
+        const searchInput = document.getElementById('searchInput');
+        const statusFilter = document.getElementById('statusFilter');
+        const dateFilter = document.getElementById('dateFilter');
+        
+        // Modal elements
+        const logModal = document.getElementById('logModal');
+        const logModalContent = document.getElementById('logModalContent');
+        const closeModal = document.getElementById('closeModal');
+        const modalBody = document.getElementById('modalBody');
+
+        // Chart instances
+        let dailyEarningsChart, userComparisonChart;
+
+        // Global state
+        let allLogs = [];
+        let allUsers = [];
+
+        // --- Authentication ---
+        const checkAdminRole = async (user) => {
+            if (!user) return false;
+            try {
+                const userDocRef = doc(db, 'users', user.uid);
+                const userDoc = await getDoc(userDocRef);
+                if (userDoc.exists() && userDoc.data().role === 'admin') {
+                    return true;
+                }
+                return false;
+            } catch (error) {
+                console.error("Error checking admin role:", error);
+                return false;
+            }
+        };
+
+        onAuthStateChanged(auth, async (user) => {
+            loadingOverlay.style.display = 'flex';
+            if (user) {
+                const isAdmin = await checkAdminRole(user);
+                if (isAdmin) {
+                    loginSection.style.display = 'none';
+                    adminPanel.style.display = 'block';
+                    adminNameEl.textContent = user.displayName || user.email.split('@')[0];
+                    adminEmailEl.textContent = user.email;
+                    if(user.photoURL) adminPhotoEl.src = user.photoURL;
+                    initializeDashboard();
+                } else {
+                    await signOut(auth);
+                    loginError.textContent = 'Access Denied. Only admins are allowed.';
+                    showLogin();
+                }
+            } else {
+                showLogin();
+            }
+        });
+        
+        const showLogin = () => {
+            adminPanel.style.display = 'none';
+            loginSection.style.display = 'flex';
+            loadingOverlay.style.display = 'none';
+        };
+
+        loginForm.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            loadingOverlay.style.display = 'flex';
+            loginError.textContent = '';
+            const email = document.getElementById('email').value;
+            const password = document.getElementById('password').value;
+            try {
+                await signInWithEmailAndPassword(auth, email, password);
+                // onAuthStateChanged will handle the rest
+            } catch (error) {
+                loginError.textContent = 'Invalid email or password.';
+                loadingOverlay.style.display = 'none';
+            }
+        });
+
+        logoutButton.addEventListener('click', async () => {
+            await signOut(auth);
+        });
+        
+        // --- Dashboard Initialization ---
+        let unsubscribeUsers, unsubscribeLogs;
+        
+        function initializeDashboard() {
+            if (unsubscribeUsers) unsubscribeUsers();
+            if (unsubscribeLogs) unsubscribeLogs();
+            
+            const usersQuery = query(collection(db, "users"));
+            unsubscribeUsers = onSnapshot(usersQuery, (snapshot) => {
+                allUsers = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateDashboardStats();
+                loadingOverlay.style.display = 'none';
+            });
+            
+            const logsQuery = query(collectionGroup(db, 'records'));
+            unsubscribeLogs = onSnapshot(logsQuery, (snapshot) => {
+                allLogs = snapshot.docs.map(doc => ({ id: doc.id, ...doc.data() }));
+                updateDashboardStats();
+                updateLogsTable();
+                loadingOverlay.style.display = 'none';
+            });
+        }
+
+        // --- Data Processing & UI Updates ---
+        function formatCurrency(amount) {
+            const numericAmount = parseFloat(String(amount).replace(/[^0-9.-]+/g,""));
+            return isNaN(numericAmount) ? '₹0' : `₹${numericAmount.toLocaleString('en-IN')}`;
+        }
+
+        function updateDashboardStats() {
+            // Basic stats
+            totalUsersEl.textContent = allUsers.length;
+            totalLogsEl.textContent = allLogs.length;
+
+            // Total earnings
+            const total = allLogs.reduce((sum, log) => {
+                const earnings = parseFloat(String(log.combinedTotalEarnings || '0').replace('₹', ''));
+                return sum + (isNaN(earnings) ? 0 : earnings);
+            }, 0);
+            totalEarningsEl.textContent = formatCurrency(total);
+
+            // Top 5 users
+            const userEarnings = {};
+            allUsers.forEach(u => userEarnings[u.id] = { name: u.displayName || u.email, earnings: 0 });
+
+            allLogs.forEach(log => {
+                if(userEarnings[log.userId]) {
+                    const earnings = parseFloat(String(log.combinedTotalEarnings || '0').replace('₹', ''));
+                    userEarnings[log.userId].earnings += isNaN(earnings) ? 0 : earnings;
+                }
+            });
+
+            const sortedUsers = Object.values(userEarnings).sort((a, b) => b.earnings - a.earnings);
+            
+            topUsersEl.innerHTML = sortedUsers.slice(0, 5).map(user => `
+                <li class="flex justify-between items-center text-gray-300">
+                    <span>${user.name}</span>
+                    <span class="font-semibold text-green-400">${formatCurrency(user.earnings)}</span>
+                </li>
+            `).join('') || '<li class="text-gray-500">No earnings data.</li>';
+            
+            // Update charts
+            updateDailyEarningsChart();
+            updateUserComparisonChart(sortedUsers);
+        }
+
+        function updateLogsTable() {
+            const searchTerm = searchInput.value.toLowerCase();
+            const selectedStatus = statusFilter.value;
+            const selectedDate = dateFilter.value;
+
+            const filteredLogs = allLogs.filter(log => {
+                const user = allUsers.find(u => u.id === log.userId);
+                const userName = user ? (user.displayName || user.email).toLowerCase() : '';
+                const farmerName = (log.customerName || '').toLowerCase();
+                
+                const matchesSearch = userName.includes(searchTerm) || farmerName.includes(searchTerm);
+                const matchesStatus = !selectedStatus || log.paymentStatus === selectedStatus;
+                const matchesDate = !selectedDate || log.date === selectedDate;
+                
+                return matchesSearch && matchesStatus && matchesDate;
+            }).sort((a, b) => (b.timestamp?.toMillis() || 0) - (a.timestamp?.toMillis() || 0));
+
+            logsTableBody.innerHTML = filteredLogs.map((log, index) => {
+                const user = allUsers.find(u => u.id === log.userId);
+                const statusColors = {
+                    paid: 'bg-green-500 text-green-100',
+                    due: 'bg-red-500 text-red-100',
+                    advance: 'bg-purple-500 text-purple-100',
+                    default: 'bg-yellow-500 text-yellow-100'
+                };
+                const statusClass = statusColors[log.paymentStatus] || 'bg-gray-500 text-gray-100';
+
+                return `
+                    <tr class="${index % 2 === 0 ? 'table-row-even' : 'table-row-odd'} hover:bg-gray-600 transition-colors">
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium text-white">${log.customerName}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${log.date}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${log.hourly ? `${log.hourly.start} - ${log.hourly.end}` : 'N/A'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">
+                           ${log.hourly ? `Rate: ${formatCurrency(log.hourly.rate)}/hr<br>` : ''}
+                           ${log.trip ? `Trips: ${log.trip.numberOfTrips}` : ''}
+                        </td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-semibold text-green-400">${formatCurrency(log.combinedTotalEarnings)}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm"><span class="px-2 inline-flex text-xs leading-5 font-semibold rounded-full ${statusClass}">${log.paymentStatus || 'default'}</span></td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm text-gray-300">${user ? (user.displayName || user.email) : 'Unknown User'}</td>
+                        <td class="px-6 py-4 whitespace-nowrap text-sm font-medium space-x-2">
+                            <button class="view-btn text-blue-400 hover:text-blue-300" data-log-id="${log.id}">View</button>
+                            <button class="delete-btn text-red-400 hover:text-red-300" data-log-id="${log.id}" data-user-id="${log.userId}">Delete</button>
+                        </td>
+                    </tr>
+                `;
+            }).join('') || `<tr><td colspan="8" class="text-center py-8 text-gray-400">No logs found.</td></tr>`;
+        }
+        
+        // --- Event Listeners for Filtering and Actions ---
+        [searchInput, statusFilter, dateFilter].forEach(el => el.addEventListener('input', updateLogsTable));
+
+        logsTableBody.addEventListener('click', async (e) => {
+            const logId = e.target.dataset.logId;
+            const userId = e.target.dataset.userId;
+
+            if (e.target.classList.contains('view-btn')) {
+                const log = allLogs.find(l => l.id === logId);
+                if (log) showLogDetails(log);
+            }
+            if (e.target.classList.contains('delete-btn')) {
+                if (confirm('Are you sure you want to permanently delete this log?')) {
+                    try {
+                        const logDocRef = doc(db, 'users', userId, 'records', logId);
+                        await deleteDoc(logDocRef);
+                        // UI will update automatically via onSnapshot
+                    } catch (error) {
+                        console.error("Error deleting log:", error);
+                        alert('Failed to delete log.');
+                    }
+                }
+            }
+        });
+
+        // --- Charting ---
+        function updateDailyEarningsChart() {
+            const last7Days = {};
+            for (let i = 6; i >= 0; i--) {
+                const d = new Date();
+                d.setDate(d.getDate() - i);
+                const key = d.toISOString().split('T')[0];
+                last7Days[key] = 0;
+            }
+
+            allLogs.forEach(log => {
+                if (log.date && last7Days[log.date] !== undefined) {
+                    const earnings = parseFloat(String(log.combinedTotalEarnings || '0').replace('₹', ''));
+                    last7Days[log.date] += isNaN(earnings) ? 0 : earnings;
+                }
+            });
+
+            const labels = Object.keys(last7Days).map(d => new Date(d).toLocaleDateString('en-US', { weekday: 'short', day: 'numeric'}));
+            const data = Object.values(last7Days);
+
+            if (dailyEarningsChart) dailyEarningsChart.destroy();
+            dailyEarningsChart = new Chart(document.getElementById('dailyEarningsChart'), {
+                type: 'line',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Earnings',
+                        data,
+                        backgroundColor: 'rgba(37, 99, 235, 0.2)',
+                        borderColor: 'rgba(37, 99, 235, 1)',
+                        borderWidth: 2,
+                        tension: 0.4,
+                        fill: true,
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    scales: { y: { beginAtZero: true, ticks: { color: '#9ca3af' } }, x: { ticks: { color: '#9ca3af' } } },
+                    plugins: { legend: { labels: { color: '#9ca3af' } } }
+                }
+            });
+        }
+        
+        function updateUserComparisonChart(sortedUsers) {
+            const top10Users = sortedUsers.slice(0, 10);
+            const labels = top10Users.map(u => u.name);
+            const data = top10Users.map(u => u.earnings);
+
+            if (userComparisonChart) userComparisonChart.destroy();
+            userComparisonChart = new Chart(document.getElementById('userComparisonChart'), {
+                type: 'bar',
+                data: {
+                    labels,
+                    datasets: [{
+                        label: 'Total Earnings',
+                        data,
+                        backgroundColor: [
+                            'rgba(59, 130, 246, 0.7)', 'rgba(239, 68, 68, 0.7)',
+                            'rgba(16, 185, 129, 0.7)', 'rgba(245, 158, 11, 0.7)',
+                            'rgba(139, 92, 246, 0.7)', 'rgba(236, 72, 153, 0.7)'
+                        ],
+                        borderColor: '#374151',
+                        borderWidth: 1,
+                    }]
+                },
+                options: {
+                    indexAxis: 'y',
+                    responsive: true,
+                    scales: { y: { ticks: { color: '#9ca3af' } }, x: { ticks: { color: '#9ca3af' } } },
+                    plugins: { legend: { display: false } }
+                }
+            });
+        }
+        
+        // --- Modal Logic ---
+        function showLogDetails(log) {
+            const user = allUsers.find(u => u.id === log.userId);
+            let hourlyHtml = 'Not available';
+            if (log.hourly) {
+                hourlyHtml = `
+                    <p><strong>Time:</strong> ${log.hourly.start} to ${log.hourly.end}</p>
+                    <p><strong>Duration:</strong> ${log.hourly.time}</p>
+                    <p><strong>Rate:</strong> ${formatCurrency(log.hourly.rate)} / hr</p>
+                    <p><strong>Earnings:</strong> ${formatCurrency(log.hourly.earnings)}</p>
+                `;
+            }
+            let tripHtml = 'Not available';
+            if(log.trip) {
+                tripHtml = `
+                    <p><strong>Trips:</strong> ${log.trip.numberOfTrips}</p>
+                    <p><strong>Cost per Trip:</strong> ${formatCurrency(log.trip.costPerTrip)}</p>
+                    <p><strong>Earnings:</strong> ${formatCurrency(log.trip.earnings)}</p>
+                `;
+            }
+
+            modalBody.innerHTML = `
+                <div class="grid grid-cols-2 gap-4">
+                    <div><p><strong>Farmer:</strong></p><p>${log.customerName}</p></div>
+                    <div><p><strong>Phone:</strong></p><p>${log.customerPhoneNumber || 'N/A'}</p></div>
+                    <div><p><strong>Date:</strong></p><p>${log.date}</p></div>
+                    <div><p><strong>Saved by:</strong></p><p>${user ? (user.displayName || user.email) : 'N/A'}</p></div>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <h4 class="font-semibold text-lg mb-2">Hourly Details</h4>
+                    ${hourlyHtml}
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-700">
+                    <h4 class="font-semibold text-lg mb-2">Trip Details</h4>
+                    ${tripHtml}
+                </div>
+                 <div class="mt-4 pt-4 border-t border-gray-700">
+                    <h4 class="font-semibold text-lg mb-2">Note</h4>
+                    <p class="whitespace-pre-wrap">${log.noteContent || 'No note provided.'}</p>
+                </div>
+                <div class="mt-4 pt-4 border-t border-gray-700 text-right">
+                    <p class="text-xl font-bold">Total: <span class="text-green-400">${formatCurrency(log.combinedTotalEarnings)}</span></p>
+                </div>
+            `;
+            logModal.classList.remove('hidden');
+            logModal.classList.add('flex');
+            setTimeout(() => {
+                logModalContent.classList.remove('scale-95', 'opacity-0');
+            }, 50);
+        }
+        
+        closeModal.addEventListener('click', () => {
+             logModalContent.classList.add('scale-95', 'opacity-0');
+             setTimeout(() => {
+                logModal.classList.add('hidden');
+                logModal.classList.remove('flex');
+            }, 300);
+        });
+
+        // --- Export to CSV ---
+        const exportButton = document.getElementById('exportButton');
+        exportButton.addEventListener('click', () => {
+            const headers = ['Farmer Name', 'Date', 'Start Time', 'End Time', 'Rate/hour', 'Trips', 'Total Amount', 'Payment Status', 'Note', 'User Email'];
+            const rows = allLogs.map(log => {
+                const user = allUsers.find(u => u.id === log.userId);
+                return [
+                    log.customerName,
+                    log.date,
+                    log.hourly?.start || '',
+                    log.hourly?.end || '',
+                    log.hourly?.rate || '',
+                    log.trip?.numberOfTrips || '',
+                    String(log.combinedTotalEarnings).replace('₹', ''),
+                    log.paymentStatus,
+                    log.noteContent || '',
+                    user?.email || ''
+                ].map(field => `"${String(field).replace(/"/g, '""')}"`).join(',');
+            });
+            const csvContent = "data:text/csv;charset=utf-8," + [headers.join(','), ...rows].join('\n');
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "manatractor_logs.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        });
+        
+        // --- Theme Toggle ---
+        const themeToggle = document.getElementById('theme-toggle');
+        const lightIcon = document.getElementById('theme-icon-light');
+        const darkIcon = document.getElementById('theme-icon-dark');
+
+        if (localStorage.getItem('theme') === 'light') {
+            document.documentElement.classList.remove('dark');
+            lightIcon.classList.remove('hidden');
+            darkIcon.classList.add('hidden');
+        }
+
+        themeToggle.addEventListener('click', () => {
+            if (document.documentElement.classList.contains('dark')) {
+                document.documentElement.classList.remove('dark');
+                localStorage.setItem('theme', 'light');
+                lightIcon.classList.remove('hidden');
+                darkIcon.classList.add('hidden');
+            } else {
+                document.documentElement.classList.add('dark');
+                localStorage.setItem('theme', 'dark');
+                darkIcon.classList.remove('hidden');
+                lightIcon.classList.add('hidden');
+            }
+        });
+
+    </script>
+</body>
+</html>
